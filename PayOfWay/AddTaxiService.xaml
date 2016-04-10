@@ -1,0 +1,22 @@
+﻿<UserControl x:Class="PayOfWay.AddTaxiService"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    FontFamily="{StaticResource PhoneFontFamilyNormal}"
+    FontSize="{StaticResource PhoneFontSizeNormal}"
+    Foreground="{StaticResource PhoneForegroundBrush}"
+    d:DesignHeight="480" d:DesignWidth="480">
+
+    <StackPanel x:Name="LayoutRoot" BindingValidationError="LayoutRoot_BindingValidationError"  Background="{StaticResource PhoneChromeBrush}">
+        <TextBlock Margin="14,14,0,-10">название службы</TextBlock>
+        <TextBox Text="{Binding Name, Mode=TwoWay, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" GotFocus="TextBox_GotFocus"></TextBox>
+        <TextBlock Margin="14,0,0,-10">стоимость посадки</TextBlock>
+        <TextBox Text="{Binding StartCost, Mode=TwoWay, ValidatesOnExceptions=True, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" GotFocus="TextBox_GotFocus"  InputScope="Number"></TextBox>
+        <TextBlock Margin="14,0,0,-10">посадочных километров</TextBlock>
+        <TextBox  Text="{Binding AmountOfStartKilometers, Mode=TwoWay,ValidatesOnExceptions=True, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" GotFocus="TextBox_GotFocus" InputScope="Number"></TextBox>
+        <TextBlock Margin="14,0,0,-10">стоимость километра свыше</TextBlock>
+        <TextBox Text="{Binding AfterKilometerCost, ValidatesOnDataErrors=True,ValidatesOnExceptions=True, NotifyOnValidationError=True, Mode=TwoWay}" GotFocus="TextBox_GotFocus"  InputScope="Number"></TextBox>
+    </StackPanel>
+</UserControl>
