@@ -16,6 +16,14 @@ using System.Windows.Data;
 
 namespace Pay_Of_Way
 {
+	struct PointSize
+	{
+		public static PointSize Normal = new PointSize(){BigCircle = 20, InnerCircle = 14};
+		public static PointSize Small = new PointSize(){BigCircle = 10, InnerCircle = 6};
+		public uint BigCircle{get;set;}
+		public uint InnerCircle{get;set;}
+	}
+
 	public partial class MainPage : PhoneApplicationPage
 	{
 		// Constructor
@@ -26,6 +34,7 @@ namespace Pay_Of_Way
 		List<GeoCoordinate> _routePoints = new List<GeoCoordinate>();
 		MapPolyline _lineOfRoute;
 		double _totlaDistance;
+		MapLayer _pointsMapLayer;
 		bool autoAlignMapView = true;
 		public MainPage()
 		{
@@ -41,7 +50,6 @@ namespace Pay_Of_Way
 			PhoneApplicationService.Current.Deactivated += OnApplicationClosing;
 			PhoneApplicationService.Current.Closing += OnApplicationClosing;
 
-			
 			profilesList.ItemsSource = Settings.Instance.AvailableProfiles;
 			profilesList.SelectedItem = Settings.Instance.LastSelectedProfile;
 
@@ -50,6 +58,10 @@ namespace Pay_Of_Way
 			bind.Source = Settings.Instance;
 			bind.Mode = BindingMode.TwoWay;
 			profilesList.SetBinding(ListPicker.SelectedItemProperty, bind);
+
+			_pointsMapLayer = new MapLayer();
+			
+			map.Layers.Add(_pointsMapLayer);
 
 			BuildLocalizedApplicationBar();
 		}
@@ -74,16 +86,16 @@ namespace Pay_Of_Way
 			try
 			{
 				_locator = new Geolocator();
-				
+				_locator.MovementThreshold = 10;								
 				Geoposition position = await _locator.GetGeopositionAsync();				
 				Geocoordinate currentPosition = position.Coordinate;
-				map.Center = currentPosition.ToGeoCoordinate();
-				_locator.MovementThreshold = 100;
+				map.Center = currentPosition.ToGeoCoordinate();				
 				_locator.PositionChanged += onLoactorPositionChanged;
+				_locator.DesiredAccuracyInMeters = 30;
 				//_locator.DesiredAccuracy = PositionAccuracy.High;				
 				_lastPosition = map.Center;
-				//_routePoints.Add(map.Center);
-				map.ZoomLevel = 13;
+				_routePoints.Add(map.Center);
+				map.ZoomLevel = 14;
 			}
 			catch (UnauthorizedAccessException)
 			{
@@ -104,12 +116,15 @@ namespace Pay_Of_Way
 
 			if (_lastPosition != null)
 				distanceToPreviousPoint = _lastPosition.GetDistanceTo(position);
+			_lastPosition = position;
 			_routePoints.Add(position);
+			if (distanceToPreviousPoint < 10) return;
 			_totlaDistance += distanceToPreviousPoint;
 			
 			Action handlePositionChange = () => {
 				FormattedTotalDistance = (_totlaDistance / 1000.0).ToString("0.##");
 				_lineOfRoute.Path.Add(position);
+				DisplayPointAtMap(position, Colors.Red, PointSize.Small);
 				SetMapBoundByRoutePoints();
 			};
 
@@ -119,31 +134,32 @@ namespace Pay_Of_Way
 				Dispatcher.BeginInvoke(handlePositionChange);			
 		}
 
-		private void DisplayPointAtMapPosition(GeoCoordinate coordinate)
+		private void DisplayPointAtMap(GeoCoordinate coordinate)
+		{
+			DisplayPointAtMap(coordinate, Colors.Blue, PointSize.Normal);
+		}
+
+		private void DisplayPointAtMap(GeoCoordinate coordinate, Color insideColor, PointSize size)
 		{
 			Ellipse myCircle = new Ellipse();
 			myCircle.Fill = new SolidColorBrush(Colors.Black);
-			myCircle.Height = 20;
-			myCircle.Width = 20;
+			myCircle.Height = size.BigCircle;
+			myCircle.Width = size.BigCircle;
 
 			var innerCircle = new Ellipse();
-			innerCircle.Fill = new SolidColorBrush(Colors.Blue);
-			innerCircle.Height = 14;
-			innerCircle.Width = 14;
+			innerCircle.Fill = new SolidColorBrush(insideColor);
+			innerCircle.Height = size.InnerCircle;
+			innerCircle.Width = size.InnerCircle;
 			Grid canva = new Grid();
 
 			canva.Children.Add(myCircle);
 			canva.Children.Add(innerCircle);
 			// Create a MapOverlay to contain the circle.
-			MapOverlay myLocationOverlay = new MapOverlay();
-			myLocationOverlay.Content = canva;
-			myLocationOverlay.PositionOrigin = new Point(0.5, 0.5);
-			myLocationOverlay.GeoCoordinate = coordinate;
-
-			MapLayer myLocationLayer = new MapLayer();
-			myLocationLayer.Add(myLocationOverlay);
-
-			map.Layers.Add(myLocationLayer);
+			MapOverlay locationOverlay = new MapOverlay();
+			locationOverlay.Content = canva;
+			locationOverlay.PositionOrigin = new Point(0.5, 0.5);
+			locationOverlay.GeoCoordinate = coordinate;
+			_pointsMapLayer.Add(locationOverlay);
 		}
 
 		private async static void LaunchSettings()
@@ -170,7 +186,7 @@ namespace Pay_Of_Way
 				SystemTray.ProgressIndicator.IsIndeterminate = false;
 				SystemTray.ProgressIndicator.IsVisible = false;
 			}
-			DisplayPointAtMapPosition(map.Center);
+			DisplayPointAtMap(map.Center);
 
 			if (Settings.Instance.AvailableProfiles.Count == 0)
 			{
