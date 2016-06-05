@@ -31,8 +31,8 @@ namespace Pay_Of_Way
 		AddTaxiService _service;
 		Geolocator _locator;
 		GeoCoordinate _lastPosition;
-		List<GeoCoordinate> _routePoints = new List<GeoCoordinate>();
-		MapPolyline _lineOfRoute;
+		//List<GeoCoordinate> _routePoints = new List<GeoCoordinate>();
+		MapPolyline _routePoints;
 		double _totlaDistance;
 		MapLayer _pointsMapLayer;
 		bool autoAlignMapView = true;
@@ -43,10 +43,10 @@ namespace Pay_Of_Way
 			this.Loaded += OnMainPageLoaded;
 			// Sample code to localize the ApplicationBar
 			
-			_lineOfRoute = new MapPolyline();
-			_lineOfRoute.StrokeColor = (Color)Application.Current.Resources["PhoneAccentColor"];
-			_lineOfRoute.StrokeThickness = 5;			
-			map.MapElements.Add(_lineOfRoute);
+			_routePoints = new MapPolyline();
+			_routePoints.StrokeColor = (Color)Application.Current.Resources["PhoneAccentColor"];
+			_routePoints.StrokeThickness = 5;			
+			map.MapElements.Add(_routePoints);
 			PhoneApplicationService.Current.Deactivated += OnApplicationClosing;
 			PhoneApplicationService.Current.Closing += OnApplicationClosing;
 
@@ -94,7 +94,8 @@ namespace Pay_Of_Way
 				_locator.DesiredAccuracyInMeters = 30;
 				//_locator.DesiredAccuracy = PositionAccuracy.High;				
 				_lastPosition = map.Center;
-				_routePoints.Add(map.Center);
+				_routePoints.Path.Add(map.Center);
+				//_routePoints.Add(map.Center);
 				map.ZoomLevel = 14;
 			}
 			catch (UnauthorizedAccessException)
@@ -117,13 +118,13 @@ namespace Pay_Of_Way
 			if (_lastPosition != null)
 				distanceToPreviousPoint = _lastPosition.GetDistanceTo(position);
 			_lastPosition = position;
-			_routePoints.Add(position);
+			_routePoints.Path.Add(position);
 			if (distanceToPreviousPoint < 10) return;
 			_totlaDistance += distanceToPreviousPoint;
 			
 			Action handlePositionChange = () => {
 				FormattedTotalDistance = (_totlaDistance / 1000.0).ToString("0.##");
-				_lineOfRoute.Path.Add(position);
+				_routePoints.Path.Add(position);
 				DisplayPointAtMap(position, Colors.Red, PointSize.Small);
 				SetMapBoundByRoutePoints();
 			};
@@ -265,9 +266,9 @@ namespace Pay_Of_Way
 
 		private void SetMapBoundByRoutePoints()
 		{
-			if (_routePoints.Count > 1 && autoAlignMapView)
+			if (_routePoints.Path.Count > 1 && autoAlignMapView)
 			{
-				var rect = LocationRectangle.CreateBoundingRectangle(_routePoints);
+				var rect = LocationRectangle.CreateBoundingRectangle(_routePoints.Path);
 				map.SetView(rect);
 			}
 		}
