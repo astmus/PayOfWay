@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:maps="clr-namespace:Microsoft.Phone.Maps.Controls;assembly=Microsoft.Phone.Maps"
-    x:Class="PayOfWay.MainPage"
+    x:Class="Pay_Of_Way.MainPage"
     mc:Ignorable="d"
     FontFamily="{StaticResource PhoneFontFamilyNormal}"
     FontSize="{StaticResource PhoneFontSizeNormal}"
@@ -24,7 +24,13 @@
         </Grid.RowDefinitions>
         
             <StackPanel Margin="0,0,0,10">
-                <toolkit:ListPicker Name="profilesList" Margin="0 "  DisplayMemberPath="Name" />
+			<toolkit:ListPicker FullModeHeader="Выберите службу такси"  ExpansionMode="FullScreenOnly"  Name="profilesList" Margin="0 "   DisplayMemberPath="Name" >
+				<toolkit:ListPicker.FullModeItemTemplate>
+					<DataTemplate>
+						<TextBlock VerticalAlignment="Center" Text="{Binding Name}"  FontSize="22" Padding="15,0,0,10"/>							
+					</DataTemplate>
+				</toolkit:ListPicker.FullModeItemTemplate>
+			</toolkit:ListPicker>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="стоимость посадки" Margin="0,0,5,0"/>
                     <TextBlock Text="{Binding ElementName=profilesList, Path=SelectedItem.StartCost, FallbackValue=0}" Name="costOfStart"/>
@@ -47,6 +53,6 @@
                     <TextBlock Text="0" Name="totalPrice"/>
                 </StackPanel>
             </StackPanel>
-        <maps:Map Grid.Row="1" Name="map"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <maps:Map Grid.Row="1" ZoomLevelChanged="map_ZoomLevelChanged"  Name="map" DoubleTap="map_DoubleTap"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
     </Grid>
 </phone:PhoneApplicationPage>

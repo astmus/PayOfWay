@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Deployment xmlns="http://schemas.microsoft.com/windowsphone/2014/deployment" AppPlatformVersion="8.1">
   <DefaultLanguage xmlns="" code="en-US" />
-  <App xmlns="" ProductID="{ff4e2633-5d8c-4602-a937-406b05ead33a}" Title="PayOfWay2" RuntimeType="Silverlight" Version="1.0.0.1" Genre="apps.normal" Author="Astmus" Description="Sample description" SDOptOut="true" BackUpOptOut="true" Publisher="Astmus" PublisherID="{caff0158-ec30-417d-b456-68ccc6c6974a}">
+  <App xmlns="" ProductID="{f52d95f5-fb16-415f-abdb-fb272854357f}" Title="Pay_Of_Way" RuntimeType="Silverlight" Version="1.0.0.0" Genre="apps.normal" Author="Pay_Of_Way author" Description="Sample description" SDOptOut="false" BackUpOptOut="false" Publisher="Pay_Of_Way" PublisherID="{d6df1a58-fa61-439b-a4b7-84fda864a62c}">
     <IconPath IsRelative="true" IsResource="false">Assets\ApplicationIcon.png</IconPath>
     <Capabilities>
       <Capability Name="ID_CAP_MAP" />
@@ -11,12 +11,12 @@
       <DefaultTask Name="_default" NavigationPage="MainPage.xaml" ActivationPolicy="Resume" />
     </Tasks>
     <Tokens>
-      <PrimaryToken TokenID="PayOfWayToken" TaskName="_default">
+      <PrimaryToken TokenID="Pay_Of_WayToken" TaskName="_default">
         <TemplateFlip>
           <SmallImageURI IsRelative="true" IsResource="false">Assets\Tiles\FlipCycleTileSmall.png</SmallImageURI>
           <Count>0</Count>
           <BackgroundImageURI IsRelative="true" IsResource="false">Assets\Tiles\FlipCycleTileMedium.png</BackgroundImageURI>
-          <Title>PayOfWay</Title>
+          <Title>Pay_Of_Way</Title>
           <BackContent>
           </BackContent>
           <BackBackgroundImageURI>

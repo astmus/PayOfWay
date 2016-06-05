@@ -1,21 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
 using Microsoft.Phone.Controls;
 using Microsoft.Phone.Shell;
-using PayOfWay.Resources;
 using Windows.Devices.Geolocation;
 using System.Device.Location;
 using System.Windows.Shapes;
 using System.Windows.Media;
 using Microsoft.Phone.Maps.Controls;
 using System.Threading.Tasks;
+using System.Windows.Data;
 
-namespace PayOfWay
+namespace Pay_Of_Way
 {
 	public partial class MainPage : PhoneApplicationPage
 	{
@@ -27,20 +26,38 @@ namespace PayOfWay
 		List<GeoCoordinate> _routePoints = new List<GeoCoordinate>();
 		MapPolyline _lineOfRoute;
 		double _totlaDistance;
+		bool autoAlignMapView = true;
 		public MainPage()
 		{
 			InitializeComponent();
-			//_currentTaxProfile = Settings.LastSelectedProfile;
+			//_currentTaxProfile = Settings.LastSelectedProfile;			
 			this.Loaded += OnMainPageLoaded;
-			PhoneApplicationService.Current.Closing += OnApplicationClosing;
 			// Sample code to localize the ApplicationBar
-
+			
 			_lineOfRoute = new MapPolyline();
 			_lineOfRoute.StrokeColor = (Color)Application.Current.Resources["PhoneAccentColor"];
 			_lineOfRoute.StrokeThickness = 5;			
 			map.MapElements.Add(_lineOfRoute);
+			PhoneApplicationService.Current.Deactivated += OnApplicationClosing;
+			PhoneApplicationService.Current.Closing += OnApplicationClosing;
+
+			//if (profiles.Count == 0)
+			//	DisplayAddNewTaxiServiceDialog();
+			profilesList.ItemsSource = Settings.Instance.AvailableProfiles;
+			profilesList.SelectedItem = Settings.Instance.LastSelectedProfile;
+
+			Binding bind = new Binding();
+			bind.Path = new PropertyPath("LastSelectedProfile");
+			bind.Source = Settings.Instance;
+			bind.Mode = BindingMode.TwoWay;
+			profilesList.SetBinding(ListPicker.SelectedItemProperty, bind);
 
 			BuildLocalizedApplicationBar();
+		}
+
+		private void OnApplicationClosing(object sender, EventArgs e)
+		{
+			Settings.Instance.Save();	
 		}
 
 		public String FormattedTotalDistance
@@ -53,33 +70,27 @@ namespace PayOfWay
 		public static readonly DependencyProperty FormattedTotalDistanceProperty =
 			DependencyProperty.Register("FormattedTotalDistance", typeof(String), typeof(MainPage), new PropertyMetadata("0.00"));
 
-
-
-		private async void InitGeolocator()
+		private async Task InitGeolocator()
 		{
 			try
 			{
 				_locator = new Geolocator();
-				_locator.DesiredAccuracy = PositionAccuracy.High;
-				Geoposition position = await _locator.GetGeopositionAsync();
+				
+				Geoposition position = await _locator.GetGeopositionAsync();				
 				Geocoordinate currentPosition = position.Coordinate;
 				map.Center = currentPosition.ToGeoCoordinate();
-				_locator.MovementThreshold = 50;
-				_locator.DesiredAccuracy = PositionAccuracy.High;
-				_locator.PositionChanged += _locator_PositionChanged;
+				_locator.MovementThreshold = 100;
+				_locator.PositionChanged += onLoactorPositionChanged;
+				//_locator.DesiredAccuracy = PositionAccuracy.High;				
 				_lastPosition = map.Center;
-				_routePoints.Add(map.Center);
-				map.ZoomLevel = 15;
-				
+				//_routePoints.Add(map.Center);
+				map.ZoomLevel = 13;
 			}
 			catch (UnauthorizedAccessException)
 			{
 				_locator = null;
 				if (MessageBox.Show("Геолокации отключена. Перейти к настройкам?", "", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-				{
 					LaunchSettings();
-				}
-
 			}
 			catch (Exception e)
 			{
@@ -87,30 +98,26 @@ namespace PayOfWay
 			}
 		}
 
-		private void _locator_PositionChanged(Geolocator sender, PositionChangedEventArgs args)
+		private void onLoactorPositionChanged(Geolocator sender, PositionChangedEventArgs args)
 		{
 			var position = args.Position.Coordinate.ToGeoCoordinate();
 			double distanceToPreviousPoint = 0;
-			if (_routePoints.Count > 0)
-				distanceToPreviousPoint = _routePoints.Last().GetDistanceTo(position);
+
+			if (_lastPosition != null)
+				distanceToPreviousPoint = _lastPosition.GetDistanceTo(position);
 			_routePoints.Add(position);
 			_totlaDistance += distanceToPreviousPoint;
 			
-
-			Action handlePositionChange = new Action(() => {
-				FormattedTotalDistance = (_totlaDistance / 1000).ToString("0.##");
+			Action handlePositionChange = () => {
+				FormattedTotalDistance = (_totlaDistance / 1000.0).ToString("0.##");
 				_lineOfRoute.Path.Add(position);
-				if (_routePoints.Count > 1)
-				{
-					var rect = LocationRectangle.CreateBoundingRectangle(_routePoints);
-					map.SetView(rect);
-				}
-			});
+				SetMapBoundByRoutePoints();
+			};
 
 			if (Dispatcher.CheckAccess())
 				handlePositionChange();
 			else
-				Dispatcher.BeginInvoke(handlePositionChange);
+				Dispatcher.BeginInvoke(handlePositionChange);			
 		}
 
 		private void DisplayPointAtMapPosition(GeoCoordinate coordinate)
@@ -145,37 +152,35 @@ namespace PayOfWay
 			await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings-location:"));
 		}
 
-		private void OnApplicationClosing(object sender, ClosingEventArgs e)
-		{
-			Settings.Save();
-		}
-
 		private void DisplayAddNewTaxiServiceDialog()
 		{
 			_service = new AddTaxiService();
 			NavigationService.Navigate(new Uri("/CustomDialogPage.xaml", UriKind.Relative));
 		}
 
-		private void OnMainPageLoaded(object sender, RoutedEventArgs e)
+		private async void OnMainPageLoaded(object sender, RoutedEventArgs e)
 		{
-			this.Loaded -= OnMainPageLoaded;
+			this.Loaded -= OnMainPageLoaded;		
 			
-			var profiles = Settings.AvailableProfiles;
-			if (profiles.Count == 0)
-				DisplayAddNewTaxiServiceDialog();
-			
-			profilesList.ItemsSource = Settings.AvailableProfiles;
-			InitGeolocator();
+			if (_locator == null)
+			{
+				SystemTray.ProgressIndicator.Text = "Определение местоположения";
+				SystemTray.ProgressIndicator.IsVisible = true;
+				SystemTray.ProgressIndicator.IsIndeterminate = true;
+				await InitGeolocator();
+				SystemTray.ProgressIndicator.IsIndeterminate = false;
+				SystemTray.ProgressIndicator.IsVisible = false;
+			}
 			DisplayPointAtMapPosition(map.Center);
 		}
 
-		protected override void OnNavigatedTo(NavigationEventArgs e)
+		/*protected async override void OnNavigatedTo(NavigationEventArgs e)
 		{
 			base.OnNavigatedTo(e);
-			if (_locator == null)
-				InitGeolocator();
-			DisplayPointAtMapPosition(map.Center);
-		}
+			
+			
+			
+		}*/
 
 		protected override void OnNavigatedFrom(NavigationEventArgs e)
 		{
@@ -192,7 +197,7 @@ namespace PayOfWay
 		{
 			var control = obj as AddTaxiService;
 			TaxProfile profile = control.Profile;
-			Settings.AvailableProfiles.Add(profile);
+			Settings.Instance.AvailableProfiles.Add(profile);
 		}
 		
 		// Sample code for building a localized ApplicationBar
@@ -218,6 +223,26 @@ namespace PayOfWay
 		private void OnAddTaxiServiceClick(object sender, EventArgs e)
 		{
 			DisplayAddNewTaxiServiceDialog();
+		}
+
+		private void map_DoubleTap(object sender, System.Windows.Input.GestureEventArgs e)
+		{
+			autoAlignMapView = false;
+			SetMapBoundByRoutePoints();
+		}
+
+		private void SetMapBoundByRoutePoints()
+		{
+			if (_routePoints.Count > 1 && autoAlignMapView)
+			{
+				var rect = LocationRectangle.CreateBoundingRectangle(_routePoints);
+				map.SetView(rect);
+			}
+		}
+
+		private void map_ZoomLevelChanged(object sender, MapZoomLevelChangedEventArgs e)
+		{
+			autoAlignMapView = false;
 		}
 	}
 }

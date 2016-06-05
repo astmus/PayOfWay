@@ -1,59 +1,35 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest"
-         xmlns:m2="http://schemas.microsoft.com/appx/2013/manifest"
-         xmlns:m3="http://schemas.microsoft.com/appx/2014/manifest"
-         xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest">
-
-  <Identity Name="17be7a8a-1ac8-4f2f-8925-56ab961ed91e"
-            Publisher="CN=Astmus"
-            Version="1.0.0.0" />
-
-  <mp:PhoneIdentity PhoneProductId="ff4e2633-5d8c-4602-a937-406b05ead33b"
-                    PhonePublisherId="caff0158-ec30-417d-b456-68ccc6c6974a"/>
-
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest" xmlns:m2="http://schemas.microsoft.com/appx/2013/manifest" xmlns:m3="http://schemas.microsoft.com/appx/2014/manifest" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest">
+  <Identity Name="17be7a8a-1ac8-4f2f-8925-56ab961ed911" Publisher="CN=Astmus" Version="1.1.0.0" />
+  <mp:PhoneIdentity PhoneProductId="ff4e2633-5d8c-4602-a937-406b05ead33b" PhonePublisherId="caff0158-ec30-417d-b456-68ccc6c6974a" />
   <Properties>
-    <DisplayName>PayOfWay</DisplayName>
+    <DisplayName>PayOfWay2</DisplayName>
     <PublisherDisplayName>Astmus</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
-
   <Prerequisites>
     <OSMinVersion>6.3.1</OSMinVersion>
     <OSMaxVersionTested>6.3.1</OSMaxVersionTested>
   </Prerequisites>
-
   <Resources>
-    <Resource Language="x-generate"/>
+    <Resource Language="x-generate" />
   </Resources>
-
   <Applications>
-    <Application Id="App"
-                 Executable="AGHost.exe"
-                 EntryPoint="MainPage.xaml">
-      <m3:VisualElements
-          DisplayName="PayOfWay"
-          Square150x150Logo="Assets\SquareTile150x150.png"
-          Square44x44Logo="Assets\Logo.png"
-          Description="PayOfWay"
-          ForegroundText="light"
-          BackgroundColor="#464646">
-        <m3:DefaultTile Square71x71Logo="Assets\SquareTile71x71.png"/>
+    <Application Id="App" Executable="AGHost.exe" EntryPoint="MainPage.xaml">
+      <m3:VisualElements DisplayName="PayOfWay2" Square150x150Logo="Assets\SquareTile150x150.png" Square44x44Logo="Assets\Logo.png" Description="PayOfWay2" ForegroundText="light" BackgroundColor="#464646">
+        <m3:DefaultTile Square71x71Logo="Assets\SquareTile71x71.png">
+        </m3:DefaultTile>
         <m3:SplashScreen Image="Assets\SplashScreen.png" />
       </m3:VisualElements>
-
       <Extensions>
         <Extension Category="windows.backgroundTasks" EntryPoint="AgHost.BackgroundTask">
           <BackgroundTasks>
-          <Task Type="systemEvent" />
+            <Task Type="systemEvent" />
           </BackgroundTasks>
         </Extension>
       </Extensions>
-
     </Application>
   </Applications>
-  <Capabilities>
-  </Capabilities>
-
   <Extensions>
     <Extension Category="windows.activatableClass.inProcessServer">
       <InProcessServer>
@@ -62,5 +38,4 @@
       </InProcessServer>
     </Extension>
   </Extensions>
-
 </Package>
