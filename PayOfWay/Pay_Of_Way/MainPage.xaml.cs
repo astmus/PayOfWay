@@ -41,8 +41,7 @@ namespace Pay_Of_Way
 			PhoneApplicationService.Current.Deactivated += OnApplicationClosing;
 			PhoneApplicationService.Current.Closing += OnApplicationClosing;
 
-			//if (profiles.Count == 0)
-			//	DisplayAddNewTaxiServiceDialog();
+			
 			profilesList.ItemsSource = Settings.Instance.AvailableProfiles;
 			profilesList.SelectedItem = Settings.Instance.LastSelectedProfile;
 
@@ -172,6 +171,23 @@ namespace Pay_Of_Way
 				SystemTray.ProgressIndicator.IsVisible = false;
 			}
 			DisplayPointAtMapPosition(map.Center);
+
+			if (Settings.Instance.AvailableProfiles.Count == 0)
+			{
+				var box = new CustomMessageBox();
+				box.Title = "Внимание";
+				box.Message = "Нет ни одной службы такси. Добавить сейчас?";			
+				box.LeftButtonContent = "Да";
+				box.RightButtonContent = "Нет";
+				box.Dismissed += box_Dismissed;
+				box.Show();
+			}
+		}
+
+		void box_Dismissed(object sender, DismissedEventArgs e)
+		{
+			if (e.Result == CustomMessageBoxResult.LeftButton)
+				DisplayAddNewTaxiServiceDialog();
 		}
 
 		/*protected async override void OnNavigatedTo(NavigationEventArgs e)
