@@ -13,21 +13,33 @@
     Foreground="{StaticResource PhoneForegroundBrush}"
     SupportedOrientations="Portrait" Orientation="Portrait"
     shell:SystemTray.IsVisible="True" Name="_this">
+	<phone:PhoneApplicationPage.Resources>
+		<!--<Style TargetType="TextBlock">
+			<Setter Property="Foreground" Value="DarkGreen"/>
+		</Style>-->
+		<Style TargetType="StackPanel">
+			<Setter Property="Background" >
+				<Setter.Value>
+					<SolidColorBrush Color="Black" Opacity="0.3"/>
+				</Setter.Value>
+			</Setter>
+		</Style>
+	</phone:PhoneApplicationPage.Resources>
     <shell:SystemTray.ProgressIndicator>
         <shell:ProgressIndicator IsIndeterminate="True" Text="Loading" 
                              IsVisible="{Binding Loading}" />
     </shell:SystemTray.ProgressIndicator>
-    <Grid x:Name="LayoutRoot" Margin="12,17,12,12" Background="Transparent">
+    <Grid x:Name="LayoutRoot"  Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition />
         </Grid.RowDefinitions>
-        
-            <StackPanel Margin="0,0,0,10">
-			<toolkit:ListPicker FullModeHeader="Выберите службу такси"  ExpansionMode="FullScreenOnly"  Name="profilesList" Margin="0 "   DisplayMemberPath="Name" >
+		<maps:Map Grid.Row="0" Grid.RowSpan="2"  ZoomLevelChanged="map_ZoomLevelChanged"  Name="map" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+		<StackPanel Margin="12,17,12,12">
+			<toolkit:ListPicker BorderThickness="0"  FullModeHeader="Выберите службу такси"  ExpansionMode="FullScreenOnly"  Name="profilesList" Margin="0 "   DisplayMemberPath="Name" >
 				<toolkit:ListPicker.FullModeItemTemplate>
 					<DataTemplate>
-						<TextBlock VerticalAlignment="Center" Text="{Binding Name}"  FontSize="22" Padding="15,0,0,10"/>							
+						<TextBlock VerticalAlignment="Center" FontSize="30" Text="{Binding Name}" Padding="15,0,0,10"/>							
 					</DataTemplate>
 				</toolkit:ListPicker.FullModeItemTemplate>
 			</toolkit:ListPicker>
@@ -53,6 +65,6 @@
                     <TextBlock Text="0" Name="totalPrice"/>
                 </StackPanel>
             </StackPanel>
-        <maps:Map Grid.Row="1" ZoomLevelChanged="map_ZoomLevelChanged"  Name="map" DoubleTap="map_DoubleTap"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+		
     </Grid>
 </phone:PhoneApplicationPage>

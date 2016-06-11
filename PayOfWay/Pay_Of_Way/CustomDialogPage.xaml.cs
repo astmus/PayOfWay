@@ -31,10 +31,10 @@ namespace Pay_Of_Way
 		}
 
 		private void Ok_Button_Click(object sender, RoutedEventArgs e)
-		{
-			NavigationService.GoBack();
+		{			
 			if (dismissedWithOk != null)
 				dismissedWithOk(CustomView);
+			NavigationService.GoBack();
 		}
 
 		private void Cancel_Button_Click(object sender, RoutedEventArgs e)

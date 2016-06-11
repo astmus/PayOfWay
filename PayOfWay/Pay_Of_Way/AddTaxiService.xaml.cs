@@ -38,5 +38,15 @@ namespace Pay_Of_Way
 			
 			e.Handled = true;
 		}
+
+		private void TextBox_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.Key == Key.Unknown)
+			{
+				e.Handled = true;				
+				(sender as TextBox).Text += ".";
+				(sender as TextBox).Select((sender as TextBox).Text.Length, 0);
+			}
+		}
 	}
 }

@@ -13,10 +13,10 @@
         <TextBlock Margin="14,14,0,-10">название службы</TextBlock>
         <TextBox Text="{Binding Name, Mode=TwoWay, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" GotFocus="TextBox_GotFocus"></TextBox>
         <TextBlock Margin="14,0,0,-10">стоимость посадки</TextBlock>
-        <TextBox Text="{Binding StartCost, Mode=TwoWay, ValidatesOnExceptions=True, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" GotFocus="TextBox_GotFocus"  InputScope="Number"></TextBox>
+        <TextBox Text="{Binding StartCost, Mode=TwoWay, ValidatesOnExceptions=True, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" KeyDown="TextBox_KeyDown" GotFocus="TextBox_GotFocus"  InputScope="Number"></TextBox>
         <TextBlock Margin="14,0,0,-10">посадочных километров</TextBlock>
-        <TextBox  Text="{Binding AmountOfStartKilometers, Mode=TwoWay,ValidatesOnExceptions=True, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" GotFocus="TextBox_GotFocus" InputScope="Number"></TextBox>
+        <TextBox  Text="{Binding AmountOfStartKilometers, Mode=TwoWay,ValidatesOnExceptions=True, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" KeyDown="TextBox_KeyDown" GotFocus="TextBox_GotFocus" InputScope="Number"></TextBox>
         <TextBlock Margin="14,0,0,-10">стоимость километра свыше</TextBlock>
-        <TextBox Text="{Binding AfterKilometerCost, ValidatesOnDataErrors=True,ValidatesOnExceptions=True, NotifyOnValidationError=True, Mode=TwoWay}" GotFocus="TextBox_GotFocus"  InputScope="Number"></TextBox>
+        <TextBox Text="{Binding AfterKilometerCost, ValidatesOnDataErrors=True,ValidatesOnExceptions=True, NotifyOnValidationError=True, Mode=TwoWay}" KeyDown="TextBox_KeyDown"  GotFocus="TextBox_GotFocus" InputScope="Number"></TextBox>
     </StackPanel>
 </UserControl>
