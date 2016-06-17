@@ -148,6 +148,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\BadgeLogo.png" />
+    <Content Include="Assets\location.png" />
+    <Content Include="Assets\locationTrans.png" />
     <Content Include="Assets\Logo.png" />
     <Content Include="Assets\play.png" />
     <Content Include="Assets\rect.png" />

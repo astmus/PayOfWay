@@ -30,6 +30,11 @@ namespace Pay_Of_Way
 		//TaxProfile _currentTaxProfile;
 		AddTaxiService _service;
 		Geolocator _locator;
+
+		public Geolocator Locator
+		{
+			get { return _locator ?? (_locator = new Geolocator()); }
+		}
 		GeoCoordinate _lastPosition;
 		//List<GeoCoordinate> _routePoints = new List<GeoCoordinate>();
 		MapPolyline _routePoints;
@@ -42,14 +47,33 @@ namespace Pay_Of_Way
 			set 
 			{ 
 				_autoAlignMapView = value;
-				string image = _autoAlignMapView ? "/Assets/rect.png" : "/Assets/rectTrans.png";
-				_routeFocus.IconUri = new System.Uri(image, UriKind.Relative);
+				if (_autoAlignMapView) autoCentrateMap = false;
+				if (_autoAlignMapView) Locator.PositionChanged += SetMapBoundByRoutePoints;
+				else Locator.PositionChanged -= SetMapBoundByRoutePoints;
+				_routeFocus.IconUri = UriForAlignMapView;
 				SetMapBoundByRoutePoints();
 			}
 		}
+
+		bool _autoCentrateMap;
+		bool autoCentrateMap
+		{
+			get { return _autoCentrateMap; }
+			set
+			{
+				_autoCentrateMap = value;
+				if (_autoCentrateMap) autoAlignMapView = false;
+				if (_autoCentrateMap) Locator.PositionChanged += CentrateMapByLastPoint;
+				else Locator.PositionChanged -= CentrateMapByLastPoint;
+				_centarteMap.IconUri = UriForCentrateMapButton;
+				CentrateMapByLastPoint(_lastPosition);
+			}
+		}
+
 		public MainPage()
 		{
 			InitializeComponent();
+			BuildLocalizedApplicationBar();
 			//_currentTaxProfile = Settings.LastSelectedProfile;			
 			this.Loaded += OnMainPageLoaded;
 			// Sample code to localize the ApplicationBar
@@ -70,11 +94,20 @@ namespace Pay_Of_Way
 			bind.Mode = BindingMode.TwoWay;
 			profilesList.SetBinding(ListPicker.SelectedItemProperty, bind);
 
-			_pointsMapLayer = new MapLayer();
-			
-			map.Layers.Add(_pointsMapLayer);
-			
-			BuildLocalizedApplicationBar();
+			_pointsMapLayer = new MapLayer();			
+			map.Layers.Add(_pointsMapLayer);						
+			autoCentrateMap = true;
+			Locator.StatusChanged += OnLocatorStatusChanged;
+		}
+
+		Uri UriForCentrateMapButton
+		{
+			get { return _autoCentrateMap ? new System.Uri("/Assets/location.png", UriKind.Relative) : new Uri("/Assets/locationTrans.png", UriKind.Relative); }
+		}
+
+		Uri UriForAlignMapView
+		{
+			get { return _autoAlignMapView ? new System.Uri("/Assets/rect.png", UriKind.Relative) : new Uri("/Assets/rectTrans.png", UriKind.Relative); }
 		}
 
 		private void OnApplicationClosing(object sender, EventArgs e)
@@ -95,29 +128,45 @@ namespace Pay_Of_Way
 		private async Task InitGeolocator()
 		{
 			try
-			{
-				_locator = new Geolocator();
-				_locator.MovementThreshold = 10;				
-				Geoposition position = await _locator.GetGeopositionAsync();				
-				Geocoordinate currentPosition = position.Coordinate;
-				map.Center = currentPosition.ToGeoCoordinate();				
-				//_locator.PositionChanged += onLoactorPositionChanged;
+			{				
+				//_locator.StatusChanged += _locator_StatusChanged;
+				Locator.MovementThreshold = 10;
+				Locator.DesiredAccuracyInMeters = 30;
+				/*Geoposition position = await _locator.GetGeopositionAsync();								
 				_locator.DesiredAccuracyInMeters = 30;
-				//_locator.DesiredAccuracy = PositionAccuracy.High;				
 				_lastPosition = map.Center;
 				_routePoints.Path.Add(_lastPosition);
+				DisplayPointAtMap(_lastPosition);*/
 				//_routePoints.Add(map.Center);
-				map.ZoomLevel = 15;
+				
 			}
 			catch (UnauthorizedAccessException)
 			{
 				_locator = null;
-				if (MessageBox.Show("Геолокации отключена. Перейти к настройкам?", "", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+				if (MessageBox.Show("Геолокация отключена. Перейти к настройкам?", "", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
 					LaunchSettings();
 			}
 			catch (Exception e)
 			{
 				MessageBox.Show("unknown error");
+			}
+		}
+
+		void OnLocatorStatusChanged(Geolocator sender, StatusChangedEventArgs args)
+		{
+			if (args.Status == PositionStatus.Ready)
+			{
+				Dispatcher.BeginInvoke(async () =>
+				{
+					SystemTray.ProgressIndicator.Text = "Определение местоположения";
+					SystemTray.ProgressIndicator.IsVisible = true;
+					SystemTray.ProgressIndicator.IsIndeterminate = true;
+					await InitGeolocator();
+					map.ZoomLevel = 15;
+					SystemTray.ProgressIndicator.IsIndeterminate = false;
+					SystemTray.ProgressIndicator.IsVisible = false;
+				});
+				Locator.StatusChanged -= OnLocatorStatusChanged;
 			}
 		}
 
@@ -133,10 +182,10 @@ namespace Pay_Of_Way
 			_totlaDistance += distanceToPreviousPoint;
 			
 			Action handlePositionChange = () => {
-				FormattedTotalDistance = (_totlaDistance / 1000.0).ToString("0.##");
+				//FormattedTotalDistance = (_totlaDistance / 1000.0).ToString("0.##");
+				FormattedTotalDistance = _totlaDistance.ToString();
 				_routePoints.Path.Add(position);
-				DisplayPointAtMap(position, Colors.Red, PointSize.Small);
-				SetMapBoundByRoutePoints();
+				DisplayPointAtMap(position, Colors.Red, PointSize.Small);				
 			};
 
 			if (Dispatcher.CheckAccess())
@@ -188,16 +237,8 @@ namespace Pay_Of_Way
 		{
 			this.Loaded -= OnMainPageLoaded;		
 			
-			if (_locator == null)
-			{
-				SystemTray.ProgressIndicator.Text = "Определение местоположения";
-				SystemTray.ProgressIndicator.IsVisible = true;
-				SystemTray.ProgressIndicator.IsIndeterminate = true;
-				await InitGeolocator();
-				SystemTray.ProgressIndicator.IsIndeterminate = false;
-				SystemTray.ProgressIndicator.IsVisible = false;
-			}
-			DisplayPointAtMap(map.Center);
+			
+			//DisplayPointAtMap(map.Center);
 
 			if (Settings.Instance.AvailableProfiles.Count == 0)
 			{
@@ -242,6 +283,7 @@ namespace Pay_Of_Way
 		}
 
 		ApplicationBarIconButton _routeFocus;
+		ApplicationBarIconButton _centarteMap;
 		// Sample code for building a localized ApplicationBar
 		private void BuildLocalizedApplicationBar()
 		{
@@ -256,10 +298,15 @@ namespace Pay_Of_Way
 			/*ApplicationBarIconButton stopButton = new ApplicationBarIconButton(new Uri("/Assets/AppBar/appbar.add.rest.png", UriKind.Relative));
 			stopButton.Text = "Стоп";
 			ApplicationBar.Buttons.Add(stopButton);*/
-			_routeFocus = new ApplicationBarIconButton(new Uri("/Assets/rect.png", UriKind.Relative));
+			_routeFocus = new ApplicationBarIconButton(UriForAlignMapView);
 			_routeFocus.Text = "Фокус";
 			_routeFocus.Click += onRouteFocusClick;
 			ApplicationBar.Buttons.Add(_routeFocus);
+
+			_centarteMap = new ApplicationBarIconButton(UriForCentrateMapButton);
+			_centarteMap.Text = "Следить";
+			_centarteMap.Click += onCentrateLocationClick;
+			ApplicationBar.Buttons.Add(_centarteMap);
 
 			// Create a new menu item with the localized string from AppResources.
 			ApplicationBarMenuItem appBarMenuItem = new ApplicationBarMenuItem("Добавить службу");
@@ -267,9 +314,13 @@ namespace Pay_Of_Way
 			ApplicationBar.MenuItems.Add(appBarMenuItem);
 		}
 
+		void onCentrateLocationClick(object sender, EventArgs e)
+		{
+			autoCentrateMap = !autoCentrateMap;
+		}
+
 		void onRouteFocusClick(object sender, EventArgs e)
 		{
-			ApplicationBarIconButton button = sender as ApplicationBarIconButton;
 			autoAlignMapView = !autoAlignMapView;
 		}
 
@@ -297,19 +348,45 @@ namespace Pay_Of_Way
 		{
 			DisplayAddNewTaxiServiceDialog();
 		}
+		void SetMapBoundByRoutePoints(Geolocator sender, PositionChangedEventArgs args)
+		{
+			SetMapBoundByRoutePoints();
+		}
+		void CentrateMapByLastPoint(Geolocator sender, PositionChangedEventArgs args)
+		{
+			CentrateMapByLastPoint(args.Position.Coordinate.ToGeoCoordinate());
+		}
+
+		private void CentrateMapByLastPoint(GeoCoordinate position = null)
+		{
+			if (!autoCentrateMap) return;
+			Action action = () =>
+			{
+				if (_routePoints.Path.Count > 0 || position != null)
+				{
+					var point = position ?? _routePoints.Path.Last();
+					map.Center = point;
+					if (_pointsMapLayer.Count == 0)
+						DisplayPointAtMap(point);
+					else
+						_pointsMapLayer.First().GeoCoordinate = point;
+					_lastPosition = point;
+				}
+			};
+			
+			if (Dispatcher.CheckAccess())
+				action();
+			else
+				Dispatcher.BeginInvoke(action);
+		}
 
 		private void SetMapBoundByRoutePoints()
 		{
-			if (autoAlignMapView)
+			if (autoAlignMapView && _routePoints.Path.Count > 1)
 			{
 				var rect = LocationRectangle.CreateBoundingRectangle(_routePoints.Path);
-				map.SetView(rect,new Thickness(10,50,10,10));
+				map.SetView(rect,new Thickness(5,80,5,5));
 			}
-		}
-
-		private void map_ZoomLevelChanged(object sender, MapZoomLevelChangedEventArgs e)
-		{			
-			autoAlignMapView = false;
 		}
 	}
 }

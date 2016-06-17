@@ -34,7 +34,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition />
         </Grid.RowDefinitions>
-		<maps:Map Grid.Row="0" Grid.RowSpan="2"  ZoomLevelChanged="map_ZoomLevelChanged"  Name="map" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+		<maps:Map Grid.Row="0" Grid.RowSpan="2"  Name="map" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 		<StackPanel Margin="12,17,12,12">
 			<toolkit:ListPicker BorderThickness="0"  FullModeHeader="Выберите службу такси"  ExpansionMode="FullScreenOnly"  Name="profilesList" Margin="0 "   DisplayMemberPath="Name" >
 				<toolkit:ListPicker.FullModeItemTemplate>
