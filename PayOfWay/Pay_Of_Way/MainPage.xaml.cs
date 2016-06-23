@@ -168,6 +168,12 @@ namespace Pay_Of_Way
 				});
 				Locator.StatusChanged -= OnLocatorStatusChanged;
 			}
+			if (args.Status == PositionStatus.Disabled)
+				Dispatcher.BeginInvoke(() =>
+				{
+					if (MessageBox.Show("Геолокация отключена. Перейти к настройкам?", "", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+						LaunchSettings();
+				});
 		}
 
 		private void onLoactorPositionChanged(Geolocator sender, PositionChangedEventArgs args)
@@ -385,7 +391,10 @@ namespace Pay_Of_Way
 			if (autoAlignMapView && _routePoints.Path.Count > 1)
 			{
 				var rect = LocationRectangle.CreateBoundingRectangle(_routePoints.Path);
-				map.SetView(rect,new Thickness(5,80,5,5));
+				Dispatcher.BeginInvoke(() =>
+				{					
+					map.SetView(rect, new Thickness(5, 80, 5, 5));
+				});
 			}
 		}
 	}
