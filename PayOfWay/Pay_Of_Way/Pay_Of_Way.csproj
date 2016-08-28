@@ -97,6 +97,8 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="BoolToRotateConverter.cs" />
+    <Compile Include="BoolToVisibilityConverter.cs" />
     <Compile Include="CustomDialogPage.xaml.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="LocalizedStrings.cs" />

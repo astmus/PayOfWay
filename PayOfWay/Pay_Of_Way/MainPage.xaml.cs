@@ -30,10 +30,11 @@ namespace Pay_Of_Way
 		//TaxProfile _currentTaxProfile;
 		AddTaxiService _service;
 		Geolocator _locator;
+		private bool ShouldResetSystemTray = false;
 
 		public Geolocator Locator
 		{
-			get { return _locator ?? (_locator = new Geolocator()); }
+			get { return _locator ?? (_locator = InitGeolocator()); }
 		}
 		GeoCoordinate _lastPosition;
 		//List<GeoCoordinate> _routePoints = new List<GeoCoordinate>();
@@ -96,7 +97,7 @@ namespace Pay_Of_Way
 
 			_pointsMapLayer = new MapLayer();			
 			map.Layers.Add(_pointsMapLayer);						
-			autoCentrateMap = true;
+			//
 			Locator.StatusChanged += OnLocatorStatusChanged;
 		}
 
@@ -125,20 +126,15 @@ namespace Pay_Of_Way
 		public static readonly DependencyProperty FormattedTotalDistanceProperty =
 			DependencyProperty.Register("FormattedTotalDistance", typeof(String), typeof(MainPage), new PropertyMetadata("0.00"));
 
-		private async Task InitGeolocator()
+		private Geolocator InitGeolocator()
 		{
 			try
-			{				
-				//_locator.StatusChanged += _locator_StatusChanged;
-				Locator.MovementThreshold = 10;
-				Locator.DesiredAccuracyInMeters = 30;
-				/*Geoposition position = await _locator.GetGeopositionAsync();								
+			{
+				_locator = new Geolocator();
+				_locator.MovementThreshold = 10;
 				_locator.DesiredAccuracyInMeters = 30;
-				_lastPosition = map.Center;
-				_routePoints.Path.Add(_lastPosition);
-				DisplayPointAtMap(_lastPosition);*/
-				//_routePoints.Add(map.Center);
-				
+				_locator.DesiredAccuracy = PositionAccuracy.High;
+				return _locator;				
 			}
 			catch (UnauthorizedAccessException)
 			{
@@ -150,30 +146,54 @@ namespace Pay_Of_Way
 			{
 				MessageBox.Show("unknown error");
 			}
+			return null;
 		}
 
 		void OnLocatorStatusChanged(Geolocator sender, StatusChangedEventArgs args)
-		{
-			if (args.Status == PositionStatus.Ready)
+		{		
+			System.Diagnostics.Debug.WriteLine(args.Status.ToString());
+			switch (args.Status)
 			{
-				Dispatcher.BeginInvoke(async () =>
+				case PositionStatus.Initializing:
+					Dispatcher.BeginInvoke(() =>
 				{
-					SystemTray.ProgressIndicator.Text = "Определение местоположения";
-					SystemTray.ProgressIndicator.IsVisible = true;
-					SystemTray.ProgressIndicator.IsIndeterminate = true;
-					await InitGeolocator();
+					if (SystemTray.ProgressIndicator != null)
+					{
+						SystemTray.ProgressIndicator.Text = "Определение местоположения";
+						SystemTray.ProgressIndicator.IsVisible = true;
+						SystemTray.ProgressIndicator.IsIndeterminate = true;
+					}
+					else
 					map.ZoomLevel = 15;
-					SystemTray.ProgressIndicator.IsIndeterminate = false;
-					SystemTray.ProgressIndicator.IsVisible = false;
 				});
 				Locator.StatusChanged -= OnLocatorStatusChanged;
-			}
-			if (args.Status == PositionStatus.Disabled)
-				Dispatcher.BeginInvoke(() =>
+				break;
+
+				case PositionStatus.Ready:
+					Dispatcher.BeginInvoke(() =>
+				{
+					if (SystemTray.ProgressIndicator != null)
+					{
+						SystemTray.ProgressIndicator.IsIndeterminate = false;
+						SystemTray.ProgressIndicator.IsVisible = false;
+					}
+					else
+						ShouldResetSystemTray = true;
+					autoCentrateMap = true;
+					map.ZoomLevel = 15;
+				});			
+				Locator.StatusChanged -= OnLocatorStatusChanged;
+				break;
+				
+				case PositionStatus.NotAvailable:
+				case PositionStatus.Disabled:
+					Dispatcher.BeginInvoke(() =>
 				{
 					if (MessageBox.Show("Геолокация отключена. Перейти к настройкам?", "", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
 						LaunchSettings();
 				});
+					break;
+			}
 		}
 
 		private void onLoactorPositionChanged(Geolocator sender, PositionChangedEventArgs args)
@@ -183,7 +203,7 @@ namespace Pay_Of_Way
 
 			if (_lastPosition != null)
 				distanceToPreviousPoint = _lastPosition.GetDistanceTo(position);
-			if (distanceToPreviousPoint < 10) return;
+			//if (distanceToPreviousPoint < 10) return;
 			_lastPosition = position;			
 			_totlaDistance += distanceToPreviousPoint;
 			
@@ -239,7 +259,7 @@ namespace Pay_Of_Way
 			NavigationService.Navigate(new Uri("/CustomDialogPage.xaml", UriKind.Relative));
 		}
 
-		private async void OnMainPageLoaded(object sender, RoutedEventArgs e)
+		private void OnMainPageLoaded(object sender, RoutedEventArgs e)
 		{
 			this.Loaded -= OnMainPageLoaded;		
 			
@@ -277,6 +297,16 @@ namespace Pay_Of_Way
 				CustomDialogPage msgMox = e.Content as CustomDialogPage;
 				msgMox.CustomView = _service;
 				msgMox.dismissedWithOk += OnConfigNewTaxiServiceCompleted;
+			}
+		}
+
+		protected override void OnNavigatedTo(NavigationEventArgs e)
+		{
+			base.OnNavigatedTo(e);
+			if (ShouldResetSystemTray)
+			{
+				SystemTray.ProgressIndicator.IsIndeterminate = false;
+				SystemTray.ProgressIndicator.IsVisible = false;
 			}
 		}
 
@@ -338,13 +368,13 @@ namespace Pay_Of_Way
 				case "Старт":
 					button.Text = "Стоп";
 					button.IconUri = new Uri("/Assets/stop.png", UriKind.Relative);
-					_locator.PositionChanged += onLoactorPositionChanged;
+					Locator.PositionChanged += onLoactorPositionChanged;
 					PhoneApplicationService.Current.UserIdleDetectionMode = IdleDetectionMode.Disabled;
 					break;
 				case "Стоп":
 					button.Text = "Старт";
 					button.IconUri = new Uri("/Assets/play.png", UriKind.Relative);
-					_locator.PositionChanged -= onLoactorPositionChanged;
+					Locator.PositionChanged -= onLoactorPositionChanged;
 					PhoneApplicationService.Current.UserIdleDetectionMode = IdleDetectionMode.Enabled;
 					break;
 			}
@@ -375,7 +405,7 @@ namespace Pay_Of_Way
 					if (_pointsMapLayer.Count == 0)
 						DisplayPointAtMap(point);
 					else
-						_pointsMapLayer.First().GeoCoordinate = point;
+						_pointsMapLayer.Last().GeoCoordinate = point;
 					_lastPosition = point;
 				}
 			};
@@ -388,14 +418,15 @@ namespace Pay_Of_Way
 
 		private void SetMapBoundByRoutePoints()
 		{
-			if (autoAlignMapView && _routePoints.Path.Count > 1)
-			{
-				var rect = LocationRectangle.CreateBoundingRectangle(_routePoints.Path);
+			if (autoAlignMapView == false) return;
 				Dispatcher.BeginInvoke(() =>
-				{					
-					map.SetView(rect, new Thickness(5, 80, 5, 5));
-				});
-			}
+				{
+					if (_routePoints.Path.Count > 1) 
+					{
+						var rect = LocationRectangle.CreateBoundingRectangle(_routePoints.Path);
+						map.SetView(rect, new Thickness(5, 80, 5, 5));
+					}
+				});	
 		}
 	}
 }

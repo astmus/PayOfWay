@@ -1,6 +1,7 @@
 ﻿<phone:PhoneApplicationPage xmlns:toolkit="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone.Controls.Toolkit" 
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:local="clr-namespace:Pay_Of_Way"
     xmlns:phone="clr-namespace:Microsoft.Phone.Controls;assembly=Microsoft.Phone"
     xmlns:shell="clr-namespace:Microsoft.Phone.Shell;assembly=Microsoft.Phone"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -17,17 +18,19 @@
 		<!--<Style TargetType="TextBlock">
 			<Setter Property="Foreground" Value="DarkGreen"/>
 		</Style>-->
-		<Style TargetType="StackPanel">
+		<!--<Style TargetType="StackPanel">
 			<Setter Property="Background" >
 				<Setter.Value>
 					<SolidColorBrush Color="Black" Opacity="0.3"/>
 				</Setter.Value>
 			</Setter>
-		</Style>
+		</Style>-->
+		<local:BoolToRotateConverter x:Key="rotateConverterKey" x:Name="rotateConverter" />
+		<local:BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter"/>
 	</phone:PhoneApplicationPage.Resources>
+	
     <shell:SystemTray.ProgressIndicator>
-        <shell:ProgressIndicator IsIndeterminate="True" Text="Loading" 
-                             IsVisible="{Binding Loading}" />
+        <shell:ProgressIndicator IsIndeterminate="True" Text="Loading" IsVisible="{Binding Loading}" />
     </shell:SystemTray.ProgressIndicator>
     <Grid x:Name="LayoutRoot"  Background="Transparent">
         <Grid.RowDefinitions>
@@ -35,36 +38,62 @@
             <RowDefinition />
         </Grid.RowDefinitions>
 		<maps:Map Grid.Row="0" Grid.RowSpan="2"  Name="map" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-		<StackPanel Margin="12,17,12,12">
-			<toolkit:ListPicker BorderThickness="0"  FullModeHeader="Выберите службу такси"  ExpansionMode="FullScreenOnly"  Name="profilesList" Margin="0 "   DisplayMemberPath="Name" >
-				<toolkit:ListPicker.FullModeItemTemplate>
+		<Border Background="#99000000" Grid.Row="1" VerticalAlignment="Bottom">
+			<toolkit:ExpanderView IsExpanded="True" Name="infoExpander">
+				<toolkit:ExpanderView.Header>
+					<StackPanel Orientation="Horizontal" Margin="0">
+						<!--<Button >-->
+							<Canvas Margin="5,5,15,5"  x:Name="appbar_chevron_up" Width="30" Height="30" Clip="F1 M 0,0L 50,0L 50,50L 0,50L 0,0">
+							<Canvas.RenderTransform>							
+								<RotateTransform Angle="{Binding ElementName=infoExpander, Path=IsExpanded, Converter={StaticResource rotateConverterKey}}" CenterX="15" CenterY="15"/>
+							</Canvas.RenderTransform>						
+								<Path Fill="{StaticResource PhoneAccentBrush}" Width="30" Height="30" Stretch="Fill" Data="F1 M 37.8516,35.625L 34.6849,38.7917L 23.6016,50.2708L 23.6016,39.9792L 37.8516,24.9375L 52.1016,39.9792L 52.1016,50.2708L 41.0182,38.7917L 37.8516,35.625 Z "/>
+							</Canvas>
+						<!--</Button>-->
+						<TextBlock Visibility="{Binding ElementName=infoExpander, Path=IsExpanded, Converter={StaticResource booleanToVisibilityConverter}, ConverterParameter=Reverse}"  Name="expanderTitle" VerticalAlignment="Center"  Text="fsdfsdfs sdf sdf sdf sdf sdf sdf sdf df " />
+					</StackPanel>
+				</toolkit:ExpanderView.Header>				
+				<StackPanel Margin="0">
+                    <toolkit:ListPicker Margin="0"  BorderThickness="0" Background="Gray"  FullModeHeader="Выберите службу такси"  ExpansionMode="FullScreenOnly"  Name="profilesList"  DisplayMemberPath="Name" Header="Служба такси">
+						<toolkit:ListPicker.FullModeItemTemplate>
 					<DataTemplate>
 						<TextBlock VerticalAlignment="Center" FontSize="30" Text="{Binding Name}" Padding="15,0,0,10"/>							
 					</DataTemplate>
 				</toolkit:ListPicker.FullModeItemTemplate>
-			</toolkit:ListPicker>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="стоимость посадки" Margin="0,0,5,0"/>
-                    <TextBlock Text="{Binding ElementName=profilesList, Path=SelectedItem.StartCost, FallbackValue=0}" Name="costOfStart"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="посадочных километров" Margin="0,0,5,0"/>
-                    <TextBlock Text="{Binding ElementName=profilesList, Path=SelectedItem.AmountOfStartKilometers, FallbackValue=0}" Name="countOfStartKilometers"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="стоимость километра свыше" Margin="0,0,5,0"/>
-                    <TextBlock Text="{Binding ElementName=profilesList, Path=SelectedItem.AfterKilometerCost, FallbackValue=0}" Name="costOfKilometer"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="пройденный путь" Margin="0,0,5,0"/>
-                <TextBlock Text="{Binding ElementName=_this, Path=FormattedTotalDistance}" Name="totalDistance"/>
-                    <TextBlock Margin="5,0,0,0"  Text="km"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="итоговая стоимость" Margin="0,0,5,0"/>
-                    <TextBlock Text="0" Name="totalPrice"/>
-                </StackPanel>
-            </StackPanel>
-		
-    </Grid>
+			</toolkit:ListPicker>                
+			<Grid VerticalAlignment="Bottom">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="40"/>
+						<RowDefinition Height="40"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
+
+					<!-- distance -->
+					<TextBlock Text="Distance:"/>
+					<TextBlock Text="0 km" Grid.Column="1" x:Name="distanceLabel" HorizontalAlignment="Center"/>
+
+					<!-- time -->
+					<TextBlock Text="Time:" Grid.Column="2"/>
+					<TextBlock Text="00:00:00" Grid.Column="3" x:Name="timeLabel" HorizontalAlignment="Center"/>
+
+					<!-- calories -->
+					<TextBlock Text="Calories:" Grid.Row="1"/>
+					<TextBlock Text="0" Grid.Column="1" x:Name="caloriesLabel" HorizontalAlignment="Center" Grid.Row="1"/>
+
+					<!-- pace -->
+					<TextBlock Text="Pace:" Grid.Column="2" Grid.Row="1"/>
+					<TextBlock Text="00:00" Grid.Column="3" x:Name="paceLabel" HorizontalAlignment="Center" Grid.Row="1"/>
+				</Grid>
+			</Grid>
+		</StackPanel>
+		</toolkit:ExpanderView>
+		</Border>
+	</Grid>
 </phone:PhoneApplicationPage>
