@@ -28,72 +28,76 @@
 		<local:BoolToRotateConverter x:Key="rotateConverterKey" x:Name="rotateConverter" />
 		<local:BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter"/>
 	</phone:PhoneApplicationPage.Resources>
-	
-    <shell:SystemTray.ProgressIndicator>
-        <shell:ProgressIndicator IsIndeterminate="True" Text="Loading" IsVisible="{Binding Loading}" />
-    </shell:SystemTray.ProgressIndicator>
-    <Grid x:Name="LayoutRoot"  Background="Transparent">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition />
-        </Grid.RowDefinitions>
-		<maps:Map Grid.Row="0" Grid.RowSpan="2"  Name="map" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+	<shell:SystemTray.ProgressIndicator>
+		<shell:ProgressIndicator IsIndeterminate="True" Text="Loading" IsVisible="{Binding Loading}" />
+	</shell:SystemTray.ProgressIndicator>
+	<Grid x:Name="LayoutRoot"  Background="Transparent">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition />
+		</Grid.RowDefinitions>
+		<maps:Map Loaded="map_Loaded"  Grid.Row="0" Grid.RowSpan="2"  Name="map" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 		<Border Background="#99000000" Grid.Row="1" VerticalAlignment="Bottom">
 			<toolkit:ExpanderView IsExpanded="True" Name="infoExpander">
 				<toolkit:ExpanderView.Header>
 					<StackPanel Orientation="Horizontal" Margin="0">
 						<!--<Button >-->
-							<Canvas Margin="5,5,15,5"  x:Name="appbar_chevron_up" Width="30" Height="30" Clip="F1 M 0,0L 50,0L 50,50L 0,50L 0,0">
-							<Canvas.RenderTransform>							
+						<Canvas Margin="5,5,15,5"  x:Name="appbar_chevron_up" Width="30" Height="30" Clip="F1 M 0,0L 50,0L 50,50L 0,50L 0,0">
+							<Canvas.RenderTransform>
 								<RotateTransform Angle="{Binding ElementName=infoExpander, Path=IsExpanded, Converter={StaticResource rotateConverterKey}}" CenterX="15" CenterY="15"/>
-							</Canvas.RenderTransform>						
-								<Path Fill="{StaticResource PhoneAccentBrush}" Width="30" Height="30" Stretch="Fill" Data="F1 M 37.8516,35.625L 34.6849,38.7917L 23.6016,50.2708L 23.6016,39.9792L 37.8516,24.9375L 52.1016,39.9792L 52.1016,50.2708L 41.0182,38.7917L 37.8516,35.625 Z "/>
-							</Canvas>
+							</Canvas.RenderTransform>
+							<Path Fill="{StaticResource PhoneAccentBrush}" Width="30" Height="30" Stretch="Fill" Data="F1 M 37.8516,35.625L 34.6849,38.7917L 23.6016,50.2708L 23.6016,39.9792L 37.8516,24.9375L 52.1016,39.9792L 52.1016,50.2708L 41.0182,38.7917L 37.8516,35.625 Z "/>
+						</Canvas>
 						<!--</Button>-->
-						<TextBlock Visibility="{Binding ElementName=infoExpander, Path=IsExpanded, Converter={StaticResource booleanToVisibilityConverter}, ConverterParameter=Reverse}"  Name="expanderTitle" VerticalAlignment="Center"  Text="fsdfsdfs sdf sdf sdf sdf sdf sdf sdf df " />
+						<TextBlock Text="Расстояние: " VerticalAlignment="Center"/>
+						<TextBlock Text="{Binding ElementName=_this, Path=FormattedTotalDistance}" Name="expanderDistance" VerticalAlignment="Center"/>
+						<TextBlock Margin="5,0,0,0"  Text="Стоимость: " VerticalAlignment="Center"/>
+						<TextBlock Text="{Binding ElementName=_this, Path=TotalPrice}" Name="expanderPrice" VerticalAlignment="Center"/>
 					</StackPanel>
-				</toolkit:ExpanderView.Header>				
+				</toolkit:ExpanderView.Header>
 				<StackPanel Margin="0">
-                    <toolkit:ListPicker Margin="0"  BorderThickness="0" Background="Gray"  FullModeHeader="Выберите службу такси"  ExpansionMode="FullScreenOnly"  Name="profilesList"  DisplayMemberPath="Name" Header="Служба такси">
+					<toolkit:ListPicker Margin="0" BorderThickness="0" Background="Gray"  FullModeHeader="Выберите службу такси"  ExpansionMode="FullScreenOnly"  Name="taxProfilesList"  DisplayMemberPath="Name" Header="Служба такси">
 						<toolkit:ListPicker.FullModeItemTemplate>
-					<DataTemplate>
-						<TextBlock VerticalAlignment="Center" FontSize="30" Text="{Binding Name}" Padding="15,0,0,10"/>							
-					</DataTemplate>
-				</toolkit:ListPicker.FullModeItemTemplate>
-			</toolkit:ListPicker>                
-			<Grid VerticalAlignment="Bottom">
-				<Grid>
-					<Grid.RowDefinitions>
-						<RowDefinition Height="40"/>
-						<RowDefinition Height="40"/>
-						<RowDefinition Height="Auto"/>
-					</Grid.RowDefinitions>
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition Width="*"/>
-						<ColumnDefinition Width="*"/>
-						<ColumnDefinition Width="*"/>
-						<ColumnDefinition Width="*"/>
-					</Grid.ColumnDefinitions>
+							<DataTemplate>
+								<TextBlock VerticalAlignment="Center" FontSize="30" Text="{Binding Name}" Padding="15,0,0,10"/>
+							</DataTemplate>
+						</toolkit:ListPicker.FullModeItemTemplate>
+					</toolkit:ListPicker>
+					<Grid VerticalAlignment="Bottom">
+						<Grid>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="40"/>
+								<RowDefinition Height="40"/>
+								<RowDefinition Height="Auto"/>
+							</Grid.RowDefinitions>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
 
-					<!-- distance -->
-					<TextBlock Text="Distance:"/>
-					<TextBlock Text="0 km" Grid.Column="1" x:Name="distanceLabel" HorizontalAlignment="Center"/>
+							<!-- distance -->
+							<TextBlock Text="Посадка:"/>
+							<TextBlock Text="{Binding ElementName=taxProfilesList, Path=SelectedItem.StartCost}" Grid.Column="1" x:Name="distanceLabel" HorizontalAlignment="Center"/>
 
-					<!-- time -->
-					<TextBlock Text="Time:" Grid.Column="2"/>
-					<TextBlock Text="00:00:00" Grid.Column="3" x:Name="timeLabel" HorizontalAlignment="Center"/>
+							<!-- time -->
+							<TextBlock Text="Время:" Grid.ColumnSpan="2" Grid.Column="2"/>
+							<TextBlock Text="{Binding ElementName=_this, Path=TotalTime}" Grid.Column="4" x:Name="timeLabel" HorizontalAlignment="Center"/>
 
-					<!-- calories -->
-					<TextBlock Text="Calories:" Grid.Row="1"/>
-					<TextBlock Text="0" Grid.Column="1" x:Name="caloriesLabel" HorizontalAlignment="Center" Grid.Row="1"/>
+							<!-- calories -->
+							<TextBlock Text="За 1 км:" Grid.Row="1"/>
+							<TextBlock Text="{Binding ElementName=taxProfilesList, Path=SelectedItem.AfterKilometerCost}" Grid.Column="1" x:Name="kmCost" HorizontalAlignment="Center" Grid.Row="1"/>
 
-					<!-- pace -->
-					<TextBlock Text="Pace:" Grid.Column="2" Grid.Row="1"/>
-					<TextBlock Text="00:00" Grid.Column="3" x:Name="paceLabel" HorizontalAlignment="Center" Grid.Row="1"/>
-				</Grid>
-			</Grid>
-		</StackPanel>
-		</toolkit:ExpanderView>
+							<!-- pace --> 
+							<TextBlock Text="Км-ров посадки:" Grid.ColumnSpan="2" Grid.Column="2" Grid.Row="1"/>
+							<TextBlock Text="{Binding ElementName=taxProfilesList, Path=SelectedItem.AmountOfStartKilometers}" Grid.Column="4"  x:Name="startKmCount" HorizontalAlignment="Center" Grid.Row="1"/>
+						</Grid>
+					</Grid>
+				</StackPanel>
+			</toolkit:ExpanderView>
 		</Border>
 	</Grid>
 </phone:PhoneApplicationPage>

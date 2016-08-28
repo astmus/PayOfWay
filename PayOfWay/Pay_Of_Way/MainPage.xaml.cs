@@ -1,18 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.Phone.Controls;
+using Microsoft.Phone.Maps.Controls;
+using Microsoft.Phone.Shell;
+using System;
+using System.Device.Location;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Navigation;
-using Microsoft.Phone.Controls;
-using Microsoft.Phone.Shell;
-using Windows.Devices.Geolocation;
-using System.Device.Location;
-using System.Windows.Shapes;
-using System.Windows.Media;
-using Microsoft.Phone.Maps.Controls;
-using System.Threading.Tasks;
 using System.Windows.Data;
+using System.Windows.Media;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Windows.Threading;
+using Windows.Devices.Geolocation;
 
 namespace Pay_Of_Way
 {
@@ -39,8 +39,9 @@ namespace Pay_Of_Way
 		GeoCoordinate _lastPosition;
 		//List<GeoCoordinate> _routePoints = new List<GeoCoordinate>();
 		MapPolyline _routePoints;
-		double _totlaDistance;
+		double _totlaDistanceInMeters;
 		MapLayer _pointsMapLayer;
+		DispatcherTimer _timer = new DispatcherTimer();
 		bool _autoAlignMapView;
 		bool autoAlignMapView 
 		{
@@ -78,7 +79,8 @@ namespace Pay_Of_Way
 			//_currentTaxProfile = Settings.LastSelectedProfile;			
 			this.Loaded += OnMainPageLoaded;
 			// Sample code to localize the ApplicationBar
-			
+			_timer.Tick += onTimerTick;
+			_timer.Interval = TimeSpan.FromSeconds(1);
 			_routePoints = new MapPolyline();
 			_routePoints.StrokeColor = (Color)Application.Current.Resources["PhoneAccentColor"];
 			_routePoints.StrokeThickness = 5;			
@@ -86,18 +88,17 @@ namespace Pay_Of_Way
 			PhoneApplicationService.Current.Deactivated += OnApplicationClosing;
 			PhoneApplicationService.Current.Closing += OnApplicationClosing;
 
-			profilesList.ItemsSource = Settings.Instance.AvailableProfiles;
-			profilesList.SelectedItem = Settings.Instance.LastSelectedProfile;
+			taxProfilesList.ItemsSource = Settings.Instance.AvailableProfiles;
+			taxProfilesList.SelectedItem = Settings.Instance.LastSelectedProfile;
 
 			Binding bind = new Binding();
 			bind.Path = new PropertyPath("LastSelectedProfile");
 			bind.Source = Settings.Instance;
 			bind.Mode = BindingMode.TwoWay;
-			profilesList.SetBinding(ListPicker.SelectedItemProperty, bind);
+			taxProfilesList.SetBinding(ListPicker.SelectedItemProperty, bind);
 
 			_pointsMapLayer = new MapLayer();			
 			map.Layers.Add(_pointsMapLayer);						
-			//
 			Locator.StatusChanged += OnLocatorStatusChanged;
 		}
 
@@ -116,6 +117,22 @@ namespace Pay_Of_Way
 			Settings.Instance.Save();	
 		}
 
+		public string TotalPrice
+		{
+			get { return (string)GetValue(TotalPriceProperty); }
+			set { SetValue(TotalPriceProperty,value); }
+		}
+
+		public static readonly DependencyProperty TotalPriceProperty =
+			DependencyProperty.Register("TotalPrice", typeof(string), typeof(MainPage), new PropertyMetadata("0.00"));
+
+		public string TotalTime
+		{
+			get { return (string)GetValue(TotalTimeProperty); }
+			set { SetValue(TotalTimeProperty, value); }
+		}
+		public static readonly DependencyProperty TotalTimeProperty = DependencyProperty.Register("TotalTime", typeof(string), typeof(MainPage), new PropertyMetadata("00:00"));
+
 		public String FormattedTotalDistance
 		{
 			get { return (String)GetValue(FormattedTotalDistanceProperty); }
@@ -124,7 +141,7 @@ namespace Pay_Of_Way
 
 		// Using a DependencyProperty as the backing store for FormattedTotalDistance.  This enables animation, styling, binding, etc...
 		public static readonly DependencyProperty FormattedTotalDistanceProperty =
-			DependencyProperty.Register("FormattedTotalDistance", typeof(String), typeof(MainPage), new PropertyMetadata("0.00"));
+			DependencyProperty.Register("FormattedTotalDistance", typeof(String), typeof(MainPage), new PropertyMetadata("0.00 км"));
 
 		private Geolocator InitGeolocator()
 		{
@@ -142,7 +159,7 @@ namespace Pay_Of_Way
 				if (MessageBox.Show("Геолокация отключена. Перейти к настройкам?", "", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
 					LaunchSettings();
 			}
-			catch (Exception e)
+			catch
 			{
 				MessageBox.Show("unknown error");
 			}
@@ -181,6 +198,7 @@ namespace Pay_Of_Way
 						ShouldResetSystemTray = true;
 					autoCentrateMap = true;
 					map.ZoomLevel = 15;
+					(ApplicationBar.Buttons[0] as ApplicationBarIconButton).IsEnabled = true;
 				});			
 				Locator.StatusChanged -= OnLocatorStatusChanged;
 				break;
@@ -205,11 +223,18 @@ namespace Pay_Of_Way
 				distanceToPreviousPoint = _lastPosition.GetDistanceTo(position);
 			//if (distanceToPreviousPoint < 10) return;
 			_lastPosition = position;			
-			_totlaDistance += distanceToPreviousPoint;
+			_totlaDistanceInMeters += distanceToPreviousPoint;
 			
 			Action handlePositionChange = () => {
-				//FormattedTotalDistance = (_totlaDistance / 1000.0).ToString("0.##");
-				FormattedTotalDistance = _totlaDistance.ToString();
+				FormattedTotalDistance = (_totlaDistanceInMeters / 1000.0).ToString("0.## км");				
+				TaxProfile currentTax =  taxProfilesList.SelectedItem as TaxProfile;
+				if (currentTax != null)
+				{
+					if (_totlaDistanceInMeters < (currentTax.AmountOfStartKilometers * 1000))
+						TotalPrice = currentTax.StartCost.ToString("C2");
+					else
+						TotalPrice = (currentTax.StartCost + (((_totlaDistanceInMeters / 1000) - currentTax.AmountOfStartKilometers) * currentTax.AfterKilometerCost)).ToString("C2");
+				}				
 				_routePoints.Path.Add(position);
 				DisplayPointAtMap(position, Colors.Red, PointSize.Small);				
 			};
@@ -261,9 +286,7 @@ namespace Pay_Of_Way
 
 		private void OnMainPageLoaded(object sender, RoutedEventArgs e)
 		{
-			this.Loaded -= OnMainPageLoaded;		
-			
-			
+			this.Loaded -= OnMainPageLoaded;					
 			//DisplayPointAtMap(map.Center);
 
 			if (Settings.Instance.AvailableProfiles.Count == 0)
@@ -283,11 +306,6 @@ namespace Pay_Of_Way
 			if (e.Result == CustomMessageBoxResult.LeftButton)
 				DisplayAddNewTaxiServiceDialog();
 		}
-
-		/*protected async override void OnNavigatedTo(NavigationEventArgs e)
-		{
-			base.OnNavigatedTo(e);
-		}*/
 
 		protected override void OnNavigatedFrom(NavigationEventArgs e)
 		{
@@ -315,7 +333,8 @@ namespace Pay_Of_Way
 			var control = obj as AddTaxiService;
 			TaxProfile profile = control.Profile;
 			Settings.Instance.AvailableProfiles.Add(profile);
-			profilesList.SelectedItem = profile;
+			Settings.Instance.Save();
+			taxProfilesList.SelectedItem = profile;
 		}
 
 		ApplicationBarIconButton _routeFocus;
@@ -329,6 +348,7 @@ namespace Pay_Of_Way
 			// Create a new button and set the text value to the localized string from AppResources.
 			ApplicationBarIconButton startButton = new ApplicationBarIconButton(new Uri("/Assets/play.png", UriKind.Relative));
 			startButton.Text = "Старт";
+			startButton.IsEnabled = false;
 			startButton.Click += onStartButtonClick;
 			ApplicationBar.Buttons.Add(startButton);
 			/*ApplicationBarIconButton stopButton = new ApplicationBarIconButton(new Uri("/Assets/AppBar/appbar.add.rest.png", UriKind.Relative));
@@ -348,6 +368,19 @@ namespace Pay_Of_Way
 			ApplicationBarMenuItem appBarMenuItem = new ApplicationBarMenuItem("Добавить службу");
 			appBarMenuItem.Click += OnAddTaxiServiceClick;
 			ApplicationBar.MenuItems.Add(appBarMenuItem);
+
+			ApplicationBarMenuItem clearMap = new ApplicationBarMenuItem("Очистить карту");
+			clearMap.Click += OnClearMapClick;
+			ApplicationBar.MenuItems.Add(clearMap);
+		}
+
+		void OnClearMapClick(object sender, EventArgs e)
+		{			
+			var point = _pointsMapLayer.Last();
+			_pointsMapLayer.Clear();
+			_pointsMapLayer.Add(point);
+			_routePoints.Path.Clear();
+			_routePoints.Path.Add(point.GeoCoordinate);
 		}
 
 		void onCentrateLocationClick(object sender, EventArgs e)
@@ -360,24 +393,39 @@ namespace Pay_Of_Way
 			autoAlignMapView = !autoAlignMapView;
 		}
 
-		void onStartButtonClick(object sender, EventArgs e)
+		private int _totalRemainsTime;
+		async void onStartButtonClick(object sender, EventArgs e)
 		{
 			ApplicationBarIconButton button = sender as ApplicationBarIconButton;
 			switch(button.Text)
 			{
 				case "Старт":
 					button.Text = "Стоп";
+					TotalPrice = 0.ToString("C2");
+					OnClearMapClick(null, null);
+					onTimerTick(null, null); 
 					button.IconUri = new Uri("/Assets/stop.png", UriKind.Relative);
 					Locator.PositionChanged += onLoactorPositionChanged;
 					PhoneApplicationService.Current.UserIdleDetectionMode = IdleDetectionMode.Disabled;
+					_totalRemainsTime = 0;
+					_timer.Start();
+					infoExpander.IsExpanded = false;
 					break;
 				case "Стоп":
 					button.Text = "Старт";
 					button.IconUri = new Uri("/Assets/play.png", UriKind.Relative);
 					Locator.PositionChanged -= onLoactorPositionChanged;
+					_timer.Stop();					
 					PhoneApplicationService.Current.UserIdleDetectionMode = IdleDetectionMode.Enabled;
+					DisplayPointAtMap((await Locator.GetGeopositionAsync()).Coordinate.ToGeoCoordinate(), Colors.Blue, PointSize.Normal);
 					break;
 			}
+		}
+
+		void onTimerTick(object sender, EventArgs e)
+		{			
+			TotalTime = TimeSpan.FromSeconds(_totalRemainsTime).ToString(@"mm\:ss");
+			_totalRemainsTime++;
 		}		
 
 		private void OnAddTaxiServiceClick(object sender, EventArgs e)
@@ -403,9 +451,16 @@ namespace Pay_Of_Way
 					var point = position ?? _routePoints.Path.Last();
 					map.Center = point;
 					if (_pointsMapLayer.Count == 0)
+					{
 						DisplayPointAtMap(point);
-					else
+						_routePoints.Path.Add(point);
+					}
+					if (_timer.IsEnabled == false)
+					{
 						_pointsMapLayer.Last().GeoCoordinate = point;
+						if (_routePoints.Path.Count == 1)
+							_routePoints.Path[0] = point;
+					}
 					_lastPosition = point;
 				}
 			};
@@ -424,9 +479,15 @@ namespace Pay_Of_Way
 					if (_routePoints.Path.Count > 1) 
 					{
 						var rect = LocationRectangle.CreateBoundingRectangle(_routePoints.Path);
-						map.SetView(rect, new Thickness(5, 80, 5, 5));
+						map.SetView(rect, new Thickness(5, 5, 5, 40));
 					}
 				});	
+		}
+
+		private void map_Loaded(object sender, RoutedEventArgs e)
+		{
+			Microsoft.Phone.Maps.MapsSettings.ApplicationContext.ApplicationId = "a0122010-7fd3-4781-8d6a-e2cf4d62999f";
+			Microsoft.Phone.Maps.MapsSettings.ApplicationContext.AuthenticationToken = "x2UWa9cH9hlH2kEQNXdu1w";
 		}
 	}
 }
